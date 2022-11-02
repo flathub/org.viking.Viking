@@ -158,7 +158,7 @@ modules:
       - --disable-mapnik
     sources:
       - type: git
-        url: git://git.code.sf.net/p/viking/code
+        url: https://git.code.sf.net/p/viking/code
         tag: "viking-1.10"
 # Local path for testing
 #      - type: archive
