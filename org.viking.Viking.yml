@@ -3,7 +3,7 @@ app-id: org.viking.Viking
 # NB Viking doesn't use any Gnome specifics so freedesktop should suffice for the build
 # Albeit Yelp for help is Gnome only
 runtime: org.gnome.Platform
-runtime-version: '41'
+runtime-version: '48'
 sdk: org.gnome.Sdk
 command: viking
 rename-icon: viking
@@ -19,23 +19,6 @@ finish-args:
 modules:
 # Shared modules 'git submodule' - https://github.com/flathub/shared-modules
   - shared-modules/intltool/intltool-0.51.json
-#
-# libauth
-# build-command mostly from https://github.com/x42/liboauth/blob/master/.travis.yml
-#  modified to actually work by using '--enable-nss' for this flatpak environment
-#  and install into the flatpak area - ${FLATPAK_DEST} - which is typically /app
-#
-  - name: liboauth
-    buildsystem: simple
-    sources:
-      - type: git
-        url: https://github.com/x42/liboauth.git
-        branch: "v1.0.3"
-    build-commands:
-      - aclocal && autoheader && libtoolize --copy && autoconf && automake --gnu --add-missing --copy && ./configure --enable-nss --prefix="${FLATPAK_DEST}" && make && make install
-    cleanup:
-      - /include
-      - '/lib/*.a'
 #
 # libzip
 #
@@ -55,6 +38,7 @@ modules:
 # gexiv2/exiv2 cribbed from GIMP json build
 # https://github.com/flathub/org.gimp.GIMP/blob/master/org.gimp.GIMP.json
 #
+# gexiv2 0.15 has breaking API changes incompatible with viking 0.10
   - name: gexiv2
     modules:
       - name: exiv2
@@ -62,14 +46,12 @@ modules:
         builddir: true
         sources:
           - type: archive
-            url: https://exiv2.org/builds/exiv2-0.27.3-Source.tar.gz
-            sha256: a79f5613812aa21755d578a297874fb59a85101e793edc64ec2c6bd994e3e778
-          - type: patch
-            path: patches/exiv2-0001-Properly-detect-availability-of-flags-in-cmake-compi.patch
-          - type: patch
-            path: patches/exiv2-0002-fix_solaris_stack_protection_0.27.patch
-          - type: patch
-            path: patches/exiv2-0003-Use-check_cxx_compiler_flags-instead-of-C-version.patch
+            url: https://github.com/Exiv2/exiv2/archive/refs/tags/v0.28.5.tar.gz
+            sha256: e1671f744e379a87ba0c984617406fdf8c0ad0c594e5122f525b2fb7c28d394d
+        config-opts:
+          - -DEXIV2_BUILD_EXIV2_COMMAND=OFF
+          - -DEXIV2_ENABLE_INIH=OFF
+          - -DEXIV2_ENABLE_VIDEO=OFF
         cleanup:
           - /include
           - '/lib/*.a'
@@ -86,11 +68,12 @@ modules:
     buildsystem: meson
     config-opts:
       - -Dintrospection=false
-      - -Dlibdir=lib
+      - -Dpython3=false
+      - -Dvapi=false
     sources:
       - type: archive
-        url: https://download.gnome.org/sources/gexiv2/0.12/gexiv2-0.12.1.tar.xz
-        sha256: 8aeafd59653ea88f6b78cb03780ee9fd61a2f993070c5f0d0976bed93ac2bd77
+        url: https://download.gnome.org/sources/gexiv2/0.14/gexiv2-0.14.2.tar.xz
+        sha256: 2a0c9cf48fbe8b3435008866ffd40b8eddb0667d2212b42396fdf688e93ce0be
     cleanup:
       - /include
       - '/lib/*.a'
@@ -121,8 +104,8 @@ modules:
     buildsystem: simple
     sources:
       - type: archive
-        url: http://download-mirror.savannah.gnu.org/releases/gpsd/gpsd-3.23.1.tar.xz
-        sha256: ca2c466df783c57b8a07ad3f5c67943186d05befdc377de938ed111d1358a8c1
+        url: https://download-mirror.savannah.gnu.org/releases/gpsd/gpsd-3.26.tar.xz
+        sha256: dd8c1b7b9a7bb174099373c4e98dac67c3845fbe4833e07829e0c8dbe594cf06
     build-commands:
       - scons minimal=yes shared=True gpsd=False gpsdclients=False prefix="${FLATPAK_DEST}" && scons install
     cleanup:
@@ -156,6 +139,8 @@ modules:
 #  thus seemingly out of scope for a flatpak app anyway - so disable for now.
     config-opts:
       - --disable-mapnik
+      # viking only supports oauth1 through https://github.com/x42/liboauth.git to authenticate against OSM, but OSM shut down its oauth1 in 2024
+      - --disable-oauth
     sources:
 # Note v1.8 doesn't build 'out of the box' due to dependency on gnome-doc-utils
 # Hence creation of v1.8 flatpak version with a few fixes to get build working.
