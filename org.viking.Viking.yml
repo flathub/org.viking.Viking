@@ -7,6 +7,7 @@ runtime-version: '41'
 sdk: org.gnome.Sdk
 command: viking
 rename-icon: viking
+copy-icon: true
 rename-desktop-file: viking.desktop
 finish-args:
   - --share=network
@@ -20,19 +21,26 @@ modules:
 # Shared modules 'git submodule' - https://github.com/flathub/shared-modules
   - shared-modules/intltool/intltool-0.51.json
 #
-# libauth
-# build-command mostly from https://github.com/x42/liboauth/blob/master/.travis.yml
-#  modified to actually work by using '--enable-nss' for this flatpak environment
-#  and install into the flatpak area - ${FLATPAK_DEST} - which is typically /app
+# liboauth
+# has no autogen but need to generate autotools files
 #
   - name: liboauth
-    buildsystem: simple
+    buildsystem: autotools
+    no-autogen: true
+    config-opts:
+      - --enable-nss
     sources:
       - type: git
         url: https://github.com/x42/liboauth.git
-        branch: "v1.0.3"
-    build-commands:
-      - aclocal && autoheader && libtoolize --copy && autoconf && automake --gnu --add-missing --copy && ./configure --enable-nss --prefix="${FLATPAK_DEST}" && make && make install
+        tag: v1.0.3
+        commit: 07fc30bf6d44f5b431a943452f6083fbaf22bc8f
+      - type: shell
+        commands:
+          - aclocal
+          - autoheader
+          - libtoolize --copy
+          - autoconf
+          - automake --gnu --add-missing --copy
     cleanup:
       - /include
       - '/lib/*.a'
@@ -62,14 +70,9 @@ modules:
         builddir: true
         sources:
           - type: archive
-            url: https://exiv2.org/builds/exiv2-0.27.3-Source.tar.gz
-            sha256: a79f5613812aa21755d578a297874fb59a85101e793edc64ec2c6bd994e3e778
-          - type: patch
-            path: patches/exiv2-0001-Properly-detect-availability-of-flags-in-cmake-compi.patch
-          - type: patch
-            path: patches/exiv2-0002-fix_solaris_stack_protection_0.27.patch
-          - type: patch
-            path: patches/exiv2-0003-Use-check_cxx_compiler_flags-instead-of-C-version.patch
+            url: https://exiv2.org/builds/exiv2-0.27.5-Source.tar.gz
+            sha256: 35a58618ab236a901ca4928b0ad8b31007ebdc0386d904409d825024e45ea6e2
+
         cleanup:
           - /include
           - '/lib/*.a'
@@ -156,27 +159,15 @@ modules:
 #  thus seemingly out of scope for a flatpak app anyway - so disable for now.
     config-opts:
       - --disable-mapnik
-    sources:
-# Note v1.8 doesn't build 'out of the box' due to dependency on gnome-doc-utils
-# Hence creation of v1.8 flatpak version with a few fixes to get build working.
-      - type: git
-        url: git://git.code.sf.net/p/viking/code
-#        branch: "viking-1.8-flatpak"
-        branch: "viking-1.10"
-# Local path for testing
-#      - type: archive
-#        path: viking-1.8.zip
-  - name: metainfo
-    buildsystem: simple
-    build-commands:
+    post-install:
       - install -D org.viking.Viking.appdata.xml /app/share/metainfo/org.viking.Viking.metainfo.xml
-    sources:
-      - type: file
-        path: org.viking.Viking.appdata.xml
-  - name: icons
-    buildsystem: simple
-    build-commands:
       - install -Dm644 viking-128.png /app/share/icons/hicolor/128x128/apps/viking.png
     sources:
+      - type: git
+        url: https://git.code.sf.net/p/viking/code
+        tag: viking-1.10
+        commit: 1f9cef11e1c9ed64a93a32be9a100042e7dadf6f
+      - type: file
+        path: org.viking.Viking.appdata.xml
       - type: file
         path: viking-128.png
