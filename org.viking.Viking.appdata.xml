@@ -9,10 +9,11 @@
   <name>Viking</name>
   <project_license>GPL-2.0+</project_license>
   <summary>GPS Data Editor and Analyzer</summary>
-  <url type="homepage">http://viking.sf.net</url>
+  <url type="homepage">https://viking.sf.net</url>
   <url type="bugtracker">https://sourceforge.net/p/viking/bugs/</url>
   <url type="help">https://sourceforge.net/p/viking/wikiallura/MasterHelp/</url>
   <url type="translate">https://translations.launchpad.net/viking</url>
+  <url type="vcs-browser">https://sourceforge.net/p/viking/code/ci/master/tree/</url>
   <description>
     <p>Viking is a free/open source program to manage GPS data.</p>
     <p>Viking includes the following features:</p>
