@@ -14,6 +14,7 @@
   <url type="help">https://sourceforge.net/p/viking/wikiallura/MasterHelp/</url>
   <url type="translate">https://translations.launchpad.net/viking</url>
   <url type="vcs-browser">https://sourceforge.net/p/viking/code/ci/master/tree/</url>
+  <developer_name>The Viking Developers</developer_name>
   <description>
     <p>Viking is a free/open source program to manage GPS data.</p>
     <p>Viking includes the following features:</p>
