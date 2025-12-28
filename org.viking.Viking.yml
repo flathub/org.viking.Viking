@@ -3,7 +3,7 @@ app-id: org.viking.Viking
 # NB Viking doesn't use any Gnome specifics so freedesktop should suffice for the build
 # Albeit Yelp for help is Gnome only
 runtime: org.gnome.Platform
-runtime-version: '47'
+runtime-version: '48'
 sdk: org.gnome.Sdk
 command: viking
 rename-icon: viking
@@ -32,6 +32,7 @@ cleanup:
   - '/lib/scons-*'
   - /man
   - /share/man
+  - /share/gpsd
   - '*.la'
   - '*.a'
 
