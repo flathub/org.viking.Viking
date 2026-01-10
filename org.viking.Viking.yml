@@ -3,10 +3,11 @@ app-id: org.viking.Viking
 # NB Viking doesn't use any Gnome specifics so freedesktop should suffice for the build
 # Albeit Yelp for help is Gnome only
 runtime: org.gnome.Platform
-runtime-version: '41'
+runtime-version: '48'
 sdk: org.gnome.Sdk
 command: viking
 rename-icon: viking
+copy-icon: true
 rename-desktop-file: viking.desktop
 finish-args:
   - --share=network
@@ -15,168 +16,100 @@ finish-args:
   - --socket=x11
 # Allow to read/save anywhere (subject to normal permissions)
   - --filesystem=host
+cleanup:
+  - '/bin/exi*'
+  - '/bin/ipt*'
+  - '/bin/xmp*'
+  - '/bin/m*'
+  - '/bin/addmoddel'
+  - '/bin/geotag'
+  - '/bin/taglist'
+  - '/bin/scons*'
+  - '/bin/zip*'
+  - /include
+  - /lib/cmake
+  - /lib/pkgconfig
+  - '/lib/scons-*'
+  - /man
+  - /share/man
+  - /share/gpsd
+  - '*.la'
+  - '*.a'
 
 modules:
 # Shared modules 'git submodule' - https://github.com/flathub/shared-modules
   - shared-modules/intltool/intltool-0.51.json
-#
-# libauth
-# build-command mostly from https://github.com/x42/liboauth/blob/master/.travis.yml
-#  modified to actually work by using '--enable-nss' for this flatpak environment
-#  and install into the flatpak area - ${FLATPAK_DEST} - which is typically /app
-#
-  - name: liboauth
-    buildsystem: simple
-    sources:
-      - type: git
-        url: https://github.com/x42/liboauth.git
-        branch: "v1.0.3"
-    build-commands:
-      - aclocal && autoheader && libtoolize --copy && autoconf && automake --gnu --add-missing --copy && ./configure --enable-nss --prefix="${FLATPAK_DEST}" && make && make install
-    cleanup:
-      - /include
-      - '/lib/*.a'
-#
-# libzip
-#
+
   - name: libzip
     buildsystem: cmake-ninja
     sources:
       - type: archive
         url: https://libzip.org/download/libzip-1.8.0.tar.xz
         sha256: f0763bda24ba947e80430be787c4b068d8b6aa6027a26a19923f0acfa3dac97e
-    cleanup:
-      - /include
-      - /lib/pkgconfig/
-      - /lib/cmake/
-      - '/lib/*.a'
-      - '/bin/zip*'
-#
+
 # gexiv2/exiv2 cribbed from GIMP json build
 # https://github.com/flathub/org.gimp.GIMP/blob/master/org.gimp.GIMP.json
-#
-  - name: gexiv2
-    modules:
-      - name: exiv2
-        buildsystem: cmake-ninja
-        builddir: true
-        sources:
-          - type: archive
-            url: https://exiv2.org/builds/exiv2-0.27.3-Source.tar.gz
-            sha256: a79f5613812aa21755d578a297874fb59a85101e793edc64ec2c6bd994e3e778
-          - type: patch
-            path: patches/exiv2-0001-Properly-detect-availability-of-flags-in-cmake-compi.patch
-          - type: patch
-            path: patches/exiv2-0002-fix_solaris_stack_protection_0.27.patch
-          - type: patch
-            path: patches/exiv2-0003-Use-check_cxx_compiler_flags-instead-of-C-version.patch
-        cleanup:
-          - /include
-          - '/lib/*.a'
-          - /lib/pkgconfig/
-          - /lib/cmake/
-          - '/bin/exi*'
-          - '/bin/ipt*'
-          - '/bin/xmp*'
-          - '/bin/m*'
-          - '/bin/addmoddel'
-          - '/bin/geotag'
-          - '/bin/taglist'
+  - name: exiv2
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DEXIV2_BUILD_EXIV2_COMMAND=OFF
+      - -DEXIV2_ENABLE_INIH=OFF
+      - -DEXIV2_ENABLE_VIDEO=OFF
+    sources:
+      - type: archive
+        url: https://github.com/Exiv2/exiv2/archive/refs/tags/v0.28.5.tar.gz
+        sha256: e1671f744e379a87ba0c984617406fdf8c0ad0c594e5122f525b2fb7c28d394d
 
+# gexiv2 0.15 has breaking API changes incompatible with viking 0.10
+  - name: gexiv2
     buildsystem: meson
     config-opts:
       - -Dintrospection=false
-      - -Dlibdir=lib
+      - -Dpython3=false
+      - -Dvapi=false
     sources:
       - type: archive
-        url: https://download.gnome.org/sources/gexiv2/0.12/gexiv2-0.12.1.tar.xz
-        sha256: 8aeafd59653ea88f6b78cb03780ee9fd61a2f993070c5f0d0976bed93ac2bd77
-    cleanup:
-      - /include
-      - '/lib/*.a'
-      - /lib/pkgconfig/
-#
-# GPSD
-#
-  - name: gpsd
-#
+        url: https://download.gnome.org/sources/gexiv2/0.14/gexiv2-0.14.2.tar.xz
+        sha256: 2a0c9cf48fbe8b3435008866ffd40b8eddb0667d2212b42396fdf688e93ce0be
+
 # scons shamelessly copied from
 # https://github.com/scx/gpick-flatpak/blob/master/scons.yaml
-#  but revised cleanup and updated version
-#
-    modules:
-      - name: scons
-        buildsystem: simple
-        sources:
-        - type: archive
-          url: http://download.sourceforge.net/scons/scons-3.1.2.tar.gz
-          sha256: 7801f3f62f654528e272df780be10c0e9337e897650b62ddcee9f39fde13f8fb
-        build-commands:
-          - python3 setup.py install --prefix="${FLATPAK_DEST}";
-        cleanup:
-          - /include
-          - '/lib/scons-*'
-          - '/bin/scons*'
-
+  - name: scons
     buildsystem: simple
+    build-commands:
+      - python3 setup.py install --prefix="${FLATPAK_DEST}";
     sources:
       - type: archive
-        url: http://download-mirror.savannah.gnu.org/releases/gpsd/gpsd-3.23.1.tar.xz
-        sha256: ca2c466df783c57b8a07ad3f5c67943186d05befdc377de938ed111d1358a8c1
+        url: http://download.sourceforge.net/scons/scons-3.1.2.tar.gz
+        sha256: 7801f3f62f654528e272df780be10c0e9337e897650b62ddcee9f39fde13f8fb
+
+  - name: gpsd
+    buildsystem: simple
     build-commands:
       - scons minimal=yes shared=True gpsd=False gpsdclients=False prefix="${FLATPAK_DEST}" && scons install
-    cleanup:
-      - /include
-      - '/lib/*.a'
-      - /lib/pkgconfig/
+    sources:
+      - type: archive
+        url: https://download-mirror.savannah.gnu.org/releases/gpsd/gpsd-3.26.tar.xz
+        sha256: dd8c1b7b9a7bb174099373c4e98dac67c3845fbe4833e07829e0c8dbe594cf06
 
-## qt, thus needs org.kde.Sdk
-#  - name: gpsbabel
-## NB after 1.7 has moved to cmake
-## NB2 1.7 broken build on using --without-libusb
-#    buildsystem: autotools
-#    config-opts:
-#    - --without-libusb
-#    sources:
-#    - type: git
-#      url: https://github.com/gpsbabel/gpsbabel.git
-#      branch: "gpsbabel_1_6_0"
-
-# DO NOT CLEAN THESE AS NEEDED FOR DEPLOYMENT!!
-#   cleanup:
-#      - /bin
-#      - /lib
-# Otherwise gpsbabel & libgps.so can get removed
-
-# Actual own Viking build here
-#
   - name: viking
     buildsystem: autotools
+    config-opts:
 # Mapnik is expansive C++ dependencies, but more importantly creating maps generally requires a complex system setup for runtime usage
 #  thus seemingly out of scope for a flatpak app anyway - so disable for now.
-    config-opts:
       - --disable-mapnik
-    sources:
-# Note v1.8 doesn't build 'out of the box' due to dependency on gnome-doc-utils
-# Hence creation of v1.8 flatpak version with a few fixes to get build working.
-      - type: git
-        url: git://git.code.sf.net/p/viking/code
-#        branch: "viking-1.8-flatpak"
-        branch: "viking-1.10"
-# Local path for testing
-#      - type: archive
-#        path: viking-1.8.zip
-  - name: metainfo
-    buildsystem: simple
-    build-commands:
+# viking only supports oauth1 through https://github.com/x42/liboauth.git to authenticate against OSM, but OSM shut down its oauth1 in 2024
+      - --disable-oauth
+    post-install:
       - install -D org.viking.Viking.appdata.xml /app/share/metainfo/org.viking.Viking.metainfo.xml
-    sources:
-      - type: file
-        path: org.viking.Viking.appdata.xml
-  - name: icons
-    buildsystem: simple
-    build-commands:
       - install -Dm644 viking-128.png /app/share/icons/hicolor/128x128/apps/viking.png
     sources:
+      - type: git
+        url: https://git.code.sf.net/p/viking/code
+        tag: viking-1.10
+        commit: 1f9cef11e1c9ed64a93a32be9a100042e7dadf6f
+      - type: file
+        path: org.viking.Viking.appdata.xml
       - type: file
         path: viking-128.png
